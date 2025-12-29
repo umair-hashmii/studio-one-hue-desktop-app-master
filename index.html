@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio One Hue Controller</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+
+    .section h2 {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+      background: #ccc;
+    }
+
+    .status-indicator.active {
+      background: #4caf50;
+      box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+    }
+
+    .status-indicator.recording {
+      background: #f44336;
+      box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+      margin: 5px;
+    }
+
+    .button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .button:active {
+      transform: translateY(0);
+    }
+
+    .button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .button.secondary {
+      background: #6c757d;
+    }
+
+    .button.secondary:hover {
+      background: #5a6268;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .message {
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .message.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    .lights-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .light-item {
+      padding: 15px;
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .light-item:hover {
+      border-color: #667eea;
+      transform: translateY(-2px);
+    }
+
+    .light-item.selected {
+      border-color: #667eea;
+      background: #f0f4ff;
+    }
+
+    .light-item h3 {
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+
+    .light-item p {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .light-item .toggle-btn {
+      margin-top: 10px;
+      padding: 6px 12px;
+      font-size: 12px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .light-item .toggle-btn:hover {
+      background: #5568d3;
+    }
+
+    .light-item .toggle-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .light-item .toggle-btn.off {
+      background: #6c757d;
+    }
+
+    .light-item .toggle-btn.off:hover {
+      background: #5a6268;
+    }
+
+    .status-display {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 15px 0;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎵 Studio One Hue Controller</h1>
+      <p>Automatically control your Philips Hue lights when Studio One Pro records</p>
+    </div>
+
+    <div class="content">
+      <!-- Status Section -->
+      <div class="section">
+        <h2>Status</h2>
+        <div class="status-display">
+          <span class="status-indicator" id="studioOneStatus"></span>
+          <span id="studioOneText">Studio One: Not Running</span>
+        </div>
+        <div class="status-display">
+          <span class="status-indicator" id="recordingStatus"></span>
+          <span id="recordingText">Recording: Stopped</span>
+        </div>
+        <div id="statusMessage" class="message info hidden"></div>
+      </div>
+
+      <!-- Hue Bridge Setup -->
+      <div class="section">
+        <h2>Philips Hue Setup</h2>
+        <div id="bridgeStatus" class="message info">
+          Not connected to Hue bridge
+        </div>
+        
+        <div class="input-group" style="margin-bottom: 15px;">
+          <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" id="emulatorMode" style="width: auto; margin-right: 8px; cursor: pointer;">
+            <span>Use Emulator (for testing with local bulb emulator)</span>
+          </label>
+        </div>
+        
+        <button class="button" id="discoverBtn">Discover Bridge</button>
+        <button class="button secondary" id="setManualIpBtn" style="display: none;">Set Manual IP</button>
+        <button class="button secondary" id="authenticateBtn" disabled>Authenticate</button>
+        
+        <div id="bridgeInfo" class="hidden">
+          <div class="input-group">
+            <label>Bridge IP Address</label>
+            <input type="text" id="bridgeIp" placeholder="127.0.0.1 or your emulator IP" readonly>
+          </div>
+          <div class="input-group">
+            <label>Username (leave empty to auto-detect, or enter "newdeveloper" for emulator)</label>
+            <input type="text" id="username" placeholder='For emulator: "newdeveloper" | For real bridge: Press button then authenticate'>
+          </div>
+          <div id="authMessage" class="message hidden"></div>
+        </div>
+      </div>
+
+      <!-- Lights Selection -->
+      <div class="section">
+        <h2>Select Lights to Control</h2>
+        <button class="button" id="refreshLightsBtn" disabled>Refresh Lights</button>
+        <div id="lightsMessage" class="message hidden"></div>
+        <div id="lightsList" class="lights-list"></div>
+        <button class="button secondary" id="testLightsBtn" disabled>Test Selected Lights</button>
+        <button class="button" id="saveLightsBtn" disabled>Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    let selectedLights = [];
+    let allLights = [];
+
+    // Status updates from main process
+    ipcRenderer.on('status-update', (event, data) => {
+      updateRecordingStatus(data.recording);
+      showMessage('statusMessage', data.message, 'info');
+    });
+
+    ipcRenderer.on('studio-one-status', (event, status) => {
+      updateStudioOneStatus(status.running);
+    });
+
+    function updateStudioOneStatus(running) {
+      const indicator = document.getElementById('studioOneStatus');
+      const text = document.getElementById('studioOneText');
+      
+      if (running) {
+        indicator.classList.add('active');
+        indicator.classList.remove('recording');
+        text.textContent = 'Studio One: Running';
+      } else {
+        indicator.classList.remove('active', 'recording');
+        text.textContent = 'Studio One: Not Running';
+      }
+    }
+
+    function updateRecordingStatus(recording) {
+      const indicator = document.getElementById('recordingStatus');
+      const text = document.getElementById('recordingText');
+      
+      if (recording) {
+        indicator.classList.add('recording');
+        text.textContent = 'Recording: Active';
+      } else {
+        indicator.classList.remove('recording');
+        text.textContent = 'Recording: Stopped';
+      }
+    }
+
+    function showMessage(elementId, message, type) {
+      const element = document.getElementById(elementId);
+      element.textContent = message;
+      element.className = `message ${type}`;
+      element.classList.remove('hidden');
+      
+      if (type !== 'error') {
+        setTimeout(() => {
+          element.classList.add('hidden');
+        }, 5000);
+      }
+    }
+
+    // Emulator Mode Toggle
+    document.getElementById('emulatorMode').addEventListener('change', (e) => {
+      const isEmulator = e.target.checked;
+      const bridgeIpInput = document.getElementById('bridgeIp');
+      const setManualIpBtn = document.getElementById('setManualIpBtn');
+      const discoverBtn = document.getElementById('discoverBtn');
+      const usernameInput = document.getElementById('username');
+      
+      if (isEmulator) {
+        bridgeIpInput.readOnly = false;
+        bridgeIpInput.placeholder = '127.0.0.1 (localhost)';
+        bridgeIpInput.value = '127.0.0.1';
+        usernameInput.placeholder = 'newdeveloper (default for Hue Emulator)';
+        usernameInput.value = 'newdeveloper';
+        setManualIpBtn.style.display = 'inline-block';
+        discoverBtn.textContent = 'Connect to Emulator';
+      } else {
+        bridgeIpInput.readOnly = true;
+        bridgeIpInput.placeholder = '';
+        bridgeIpInput.value = '';
+        usernameInput.placeholder = 'Press bridge button, then click Authenticate';
+        usernameInput.value = '';
+        setManualIpBtn.style.display = 'none';
+        discoverBtn.textContent = 'Discover Bridge';
+      }
+    });
+
+    // Set Manual IP (for emulator)
+    document.getElementById('setManualIpBtn').addEventListener('click', async () => {
+      const ipAddress = document.getElementById('bridgeIp').value.trim();
+      
+      if (!ipAddress) {
+        showMessage('bridgeStatus', 'Please enter an IP address', 'error');
+        return;
+      }
+      
+      // Basic IP validation
+      const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+      if (!ipRegex.test(ipAddress)) {
+        showMessage('bridgeStatus', 'Invalid IP address format', 'error');
+        return;
+      }
+      
+      const btn = document.getElementById('setManualIpBtn');
+      btn.disabled = true;
+      btn.textContent = 'Setting...';
+      
+      const result = await ipcRenderer.invoke('set-bridge-ip', ipAddress);
+      
+      if (result.success) {
+        document.getElementById('bridgeInfo').classList.remove('hidden');
+        document.getElementById('authenticateBtn').disabled = false;
+        document.getElementById('bridgeStatus').textContent = `Emulator IP set: ${result.bridge.ipaddress}`;
+        document.getElementById('bridgeStatus').className = 'message success';
+      } else {
+        showMessage('bridgeStatus', result.error, 'error');
+      }
+      
+      btn.disabled = false;
+      btn.textContent = 'Set Manual IP';
+    });
+
+    // Bridge Discovery
+    document.getElementById('discoverBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('discoverBtn');
+      const isEmulator = document.getElementById('emulatorMode').checked;
+      const manualIp = isEmulator ? document.getElementById('bridgeIp').value.trim() : null;
+      
+      btn.disabled = true;
+      btn.textContent = isEmulator ? 'Connecting to emulator...' : 'Discovering...';
+      
+      const result = await ipcRenderer.invoke('discover-hue-bridge', manualIp || null);
+      
+      if (result.success) {
+        document.getElementById('bridgeIp').value = result.bridge.ipaddress;
+        document.getElementById('bridgeInfo').classList.remove('hidden');
+        document.getElementById('authenticateBtn').disabled = false;
+        const statusMsg = isEmulator 
+          ? `Connected to emulator: ${result.bridge.ipaddress}`
+          : `Found: ${result.bridge.name} (${result.bridge.ipaddress})`;
+        document.getElementById('bridgeStatus').textContent = statusMsg;
+        document.getElementById('bridgeStatus').className = 'message success';
+      } else {
+        showMessage('bridgeStatus', result.error, 'error');
+        document.getElementById('bridgeStatus').classList.remove('hidden');
+      }
+      
+      btn.disabled = false;
+      btn.textContent = isEmulator ? 'Discover Bridge (or use Manual IP)' : 'Discover Bridge';
+    });
+
+    // Authentication
+    document.getElementById('authenticateBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('authenticateBtn');
+      const username = document.getElementById('username').value.trim();
+      const isEmulator = document.getElementById('emulatorMode').checked;
+      
+      btn.disabled = true;
+      btn.textContent = 'Authenticating...';
+      
+      const result = await ipcRenderer.invoke('authenticate-hue', username || null, isEmulator);
+      
+      if (result.success) {
+        showMessage('authMessage', `Authenticated! Username: ${result.username}`, 'success');
+        document.getElementById('refreshLightsBtn').disabled = false;
+        loadLights();
+      } else {
+        showMessage('authMessage', result.error, 'error');
+      }
+      
+      btn.disabled = false;
+      btn.textContent = 'Authenticate';
+    });
+
+    // Load Lights
+    async function loadLights() {
+      const result = await ipcRenderer.invoke('get-lights');
+      
+      if (result.success) {
+        allLights = result.lights;
+        displayLights();
+        showMessage('lightsMessage', `Found ${result.lights.length} light(s)`, 'success');
+      } else {
+        showMessage('lightsMessage', result.error, 'error');
+      }
+    }
+
+    function displayLights() {
+      const container = document.getElementById('lightsList');
+      container.innerHTML = '';
+      
+      allLights.forEach(light => {
+        const div = document.createElement('div');
+        div.className = 'light-item';
+        div.dataset.lightId = light.id;
+        
+        if (selectedLights.includes(light.id.toString())) {
+          div.classList.add('selected');
+        }
+        
+        const isOn = light.state.on;
+        const toggleBtnClass = isOn ? '' : 'off';
+        const toggleBtnText = isOn ? 'Turn OFF' : 'Turn ON';
+        
+        div.innerHTML = `
+          <h3>${light.name}</h3>
+          <p>Type: ${light.type}</p>
+          <p>State: <strong style="color: ${isOn ? '#4caf50' : '#f44336'}">${isOn ? 'ON' : 'OFF'}</strong></p>
+          <button class="toggle-btn ${toggleBtnClass}" data-light-id="${light.id}">
+            ${toggleBtnText}
+          </button>
+        `;
+        
+        // Add click handler for the toggle button
+        const toggleBtn = div.querySelector('.toggle-btn');
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleLight(light.id);
+        });
+        
+        // Add click handler for the light item (selection)
+        div.addEventListener('click', (e) => {
+          // Don't toggle selection if clicking the button
+          if (!e.target.classList.contains('toggle-btn')) {
+            toggleLightSelection(light.id);
+          }
+        });
+        
+        container.appendChild(div);
+      });
+      
+      updateLightButtons();
+    }
+
+    async function toggleLight(lightId) {
+      const btn = document.querySelector(`.toggle-btn[data-light-id="${lightId}"]`);
+      if (!btn) return;
+      
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = 'Toggling...';
+      
+      try {
+        const result = await ipcRenderer.invoke('toggle-light', lightId);
+        
+        if (result.success) {
+          // Update the light state in our local array
+          const light = allLights.find(l => l.id === lightId);
+          if (light) {
+            light.state.on = result.newState;
+            // Refresh the display
+            displayLights();
+            showMessage('lightsMessage', `Light ${light.name} turned ${result.newState ? 'ON' : 'OFF'}`, 'success');
+          }
+        } else {
+          showMessage('lightsMessage', result.error || 'Failed to toggle light', 'error');
+        }
+      } catch (error) {
+        showMessage('lightsMessage', `Error: ${error.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function toggleLightSelection(lightId) {
+      const idStr = lightId.toString();
+      const index = selectedLights.indexOf(idStr);
+      
+      if (index > -1) {
+        selectedLights.splice(index, 1);
+      } else {
+        selectedLights.push(idStr);
+      }
+      
+      displayLights();
+    }
+
+    function updateLightButtons() {
+      const hasSelection = selectedLights.length > 0;
+      document.getElementById('testLightsBtn').disabled = !hasSelection;
+      document.getElementById('saveLightsBtn').disabled = !hasSelection;
+    }
+
+    // Refresh Lights
+    document.getElementById('refreshLightsBtn').addEventListener('click', loadLights);
+
+    // Test Lights
+    document.getElementById('testLightsBtn').addEventListener('click', async () => {
+      const result = await ipcRenderer.invoke('test-lights', selectedLights);
+      if (result.success) {
+        showMessage('lightsMessage', 'Lights tested successfully!', 'success');
+      } else {
+        showMessage('lightsMessage', result.error, 'error');
+      }
+    });
+
+    // Save Configuration
+    document.getElementById('saveLightsBtn').addEventListener('click', async () => {
+      const result = await ipcRenderer.invoke('save-config', { lightIds: selectedLights });
+      if (result.success) {
+        showMessage('lightsMessage', 'Configuration saved! Lights will be controlled automatically.', 'success');
+      } else {
+        showMessage('lightsMessage', result.error, 'error');
+      }
+    });
+
+    // Load saved configuration on startup
+    window.addEventListener('DOMContentLoaded', async () => {
+      const config = await ipcRenderer.invoke('load-config');
+      if (config && config.lightIds) {
+        selectedLights = config.lightIds;
+      }
+    });
+  </script>
+</body>
+</html>
+

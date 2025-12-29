@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+*.log
+.studio-one-hue-config.json
+dist/
+build/
+*.app
+*.exe
+

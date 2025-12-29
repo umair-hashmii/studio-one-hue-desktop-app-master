@@ -1,0 +1,26 @@
+{
+  "name": "studio-one-hue-app",
+  "version": "1.0.0",
+  "description": "Electron app that controls Philips Hue bulbs when Studio One Pro starts/stops recording",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": [
+    "electron",
+    "studio-one",
+    "philips-hue",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "chokidar": "3.6.0",
+    "node-hue-api": "^4.0.11"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0"
+  }
+}
