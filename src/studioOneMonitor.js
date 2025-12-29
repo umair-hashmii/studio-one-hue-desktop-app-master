@@ -27,7 +27,7 @@ class StudioOneMonitor extends EventEmitter {
     this.sizeCheckInterval = null; // Interval to check file size when recording
     this.trackedFile = null; // File we're currently tracking
     this.lastFileSize = 0; // Last known file size
-    this.STOP_DELAY = 2000; // 2 seconds after last activity = stopped
+    this.WARNING_DELAY = 10000; // 10 seconds for inactivity warning
   }
 
   getStudioOneProcessName() {
@@ -190,21 +190,21 @@ class StudioOneMonitor extends EventEmitter {
           this.lastFileSize = currentSize;
           this.lastFileActivity = Date.now();
         } else if (currentSize === this.lastFileSize) {
-          // File size hasn't changed - check if enough time has passed
+          // File size hasn't changed - log warning but do NOT stop recording
           const now = Date.now();
           const timeSinceActivity = this.lastFileActivity
             ? now - this.lastFileActivity
             : this.STOP_DELAY + 1;
 
-          if (timeSinceActivity >= this.STOP_DELAY) {
-            // File size hasn't changed for long enough - recording stopped
+          if (timeSinceActivity >= this.WARNING_DELAY) {
+            // Log warning about inactivity
             const fileName = path.basename(this.trackedFile);
-            console.log(
-              `⏸️ File size unchanged for ${Math.round(
+            console.warn(
+              `[STUDIO_ONE_MONITOR] WARNING: File inactive for ${Math.round(
                 timeSinceActivity / 1000
-              )}s (${currentSize} bytes) - ${fileName}`
+              )}s (${currentSize} bytes) - ${fileName}. Recording continues.`
             );
-            this.stopRecording();
+            // Do NOT stop recording - only manual stop allowed
           }
         } else {
           // File size decreased (unusual) - reset
@@ -217,8 +217,9 @@ class StudioOneMonitor extends EventEmitter {
         console.error(
           `❌ Error checking file size for ${fileName}: ${e.message}`
         );
-        // File might have been deleted - stop recording
-        this.stopRecording();
+        // File might have been deleted - log warning but do NOT stop recording
+        console.warn(`[STUDIO_ONE_MONITOR] WARNING: File access error for ${fileName}. Recording continues.`);
+      }
       }
     }, 500); // Check every 500ms
   }
@@ -360,10 +361,9 @@ class StudioOneMonitor extends EventEmitter {
         });
 
         if (!running && this.wasRecording) {
-          // Studio One closed
-          this.stopRecording();
+          // Studio One closed - log warning but do NOT stop recording
+          console.warn("[STUDIO_ONE_MONITOR] WARNING: Studio One process closed while recording. Recording continues.");
           this.closeWatcher();
-          console.log("✅ Studio One closed - Recording stopped");
         } else if (running && !this.fileWatcher) {
           // Studio One started, set up watcher
           await this.setupWatcher();

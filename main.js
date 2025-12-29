@@ -208,3 +208,19 @@ ipcMain.handle("get-link-info", async () => {
     url: studioOneLink ? `http://localhost:${studioOneLink.getPort()}` : null,
   };
 });
+
+// Manual stop recording
+ipcMain.on('manual-stop-recording', async () => {
+  console.log('[MAIN] Manual STOP recording requested by user');
+  const result = await hueController.turnOffLights();
+  if (result.success) {
+    recordingState.setRecording(false);
+    console.log('[MAIN] Manual STOP confirmed - Lights OFF');
+    mainWindow.webContents.send("status-update", {
+      recording: false,
+      message: `Recording manually stopped - Lights OFF`,
+    });
+  } else {
+    console.error('[MAIN] Failed to turn off lights on manual stop:', result.error);
+  }
+});

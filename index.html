@@ -305,6 +305,7 @@
           <span class="status-indicator" id="recordingStatus"></span>
           <span id="recordingText">Recording: Stopped</span>
         </div>
+        <button class="button" id="stopRecordingBtn" style="background: #f44336; display: none;">🛑 Stop Recording Manually</button>
         <div id="statusMessage" class="message info hidden"></div>
       </div>
 
@@ -384,15 +385,18 @@
       const indicator = document.getElementById('recordingStatus');
       const text = document.getElementById('recordingText');
       const banner = document.getElementById('recordingBanner');
+      const stopBtn = document.getElementById('stopRecordingBtn');
       
       if (recording) {
         indicator.classList.add('recording');
         text.textContent = 'Recording: Active';
         banner.classList.add('show');
+        stopBtn.style.display = 'inline-block';
       } else {
         indicator.classList.remove('recording');
         text.textContent = 'Recording: Stopped';
         banner.classList.remove('show');
+        stopBtn.style.display = 'none';
       }
     }
 
@@ -652,6 +656,21 @@
         showMessage('lightsMessage', 'Configuration saved! Lights will be controlled automatically.', 'success');
       } else {
         showMessage('lightsMessage', result.error, 'error');
+      }
+    });
+
+    // Manual Stop Recording
+    document.getElementById('stopRecordingBtn').addEventListener('click', async () => {
+      const confirmed = confirm('Are you sure you want to manually stop recording and turn off lights?');
+      if (confirmed) {
+        const btn = document.getElementById('stopRecordingBtn');
+        btn.disabled = true;
+        btn.textContent = 'Stopping...';
+        
+        // Send manual stop to main process
+        ipcRenderer.send('manual-stop-recording');
+        
+        // The status update will be sent back from main process
       }
     });
 

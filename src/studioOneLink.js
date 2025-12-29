@@ -127,20 +127,18 @@ class StudioOneLink {
 
   async handleRecordingStop(req, res) {
     try {
-      console.log("⏹️ Recording STOP received via Studio One Link");
+      console.warn("[STUDIO_ONE_LINK] WARNING: Recording STOP received via Studio One Link - IGNORED (only manual stop allowed)");
 
-      if (this.onRecordingStopCallback) {
-        await this.onRecordingStopCallback();
-      } else {
-        // Fallback: directly control lights
-        await this.hueController.turnOffLights();
-      }
+      // Do NOT call stop callback - only manual stop from UI allowed
+      // if (this.onRecordingStopCallback) {
+      //   await this.onRecordingStopCallback();
+      // }
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
           success: true,
-          message: "Recording stopped - Lights OFF",
+          message: "Recording stop ignored - use manual stop button",
         })
       );
     } catch (error) {
