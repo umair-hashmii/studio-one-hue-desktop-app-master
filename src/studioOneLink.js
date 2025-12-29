@@ -243,13 +243,20 @@ class StudioOneLink {
     return new Promise((resolve) => {
       if (this.server) {
         this.server.close(() => {
-          console.log("Studio One Link HTTP server stopped");
+          console.log("[STUDIO_ONE_LINK] HTTP server stopped");
           this.server = null;
           resolve();
         });
       } else {
+        console.log("[STUDIO_ONE_LINK] HTTP server already stopped");
         resolve();
       }
+    });
+  }
+
+  dispose() {
+    return this.stop().then(() => {
+      console.log("[STUDIO_ONE_LINK] Disposed - All resources cleaned up");
     });
   }
 

@@ -4,11 +4,41 @@ const { StudioOneMonitor } = require("./src/studioOneMonitor");
 const { HueController } = require("./src/hueController");
 const { StudioOneLink } = require("./src/studioOneLink");
 
+/**
+ * RecordingState - Single source of truth for recording state
+ */
+class RecordingState {
+  constructor() {
+    this.isRecording = false;
+    this.listeners = [];
+  }
+
+  setRecording(recording) {
+    if (this.isRecording !== recording) {
+      this.isRecording = recording;
+      console.log(`[RECORDING_STATE] State changed to: ${recording ? 'RECORDING' : 'STOPPED'}`);
+      this.listeners.forEach(listener => listener(recording));
+    }
+  }
+
+  getRecording() {
+    return this.isRecording;
+  }
+
+  addListener(listener) {
+    this.listeners.push(listener);
+  }
+
+  removeListener(listener) {
+    this.listeners = this.listeners.filter(l => l !== listener);
+  }
+}
+
 let mainWindow;
 let studioOneMonitor;
 let hueController;
 let studioOneLink;
-let isRecording = false;
+let recordingState = new RecordingState();
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -43,26 +73,32 @@ app.whenReady().then(async () => {
   studioOneLink.setCallbacks(
     async () => {
       // Recording start callback - turn on lights
+      console.log("[STUDIO_ONE_LINK] Recording START requested");
       const result = await hueController.turnOnLights();
       if (result.success) {
-        isRecording = true;
-        console.log(`Recording started via Studio One Link - Lights ON`);
+        recordingState.setRecording(true);
+        console.log("[STUDIO_ONE_LINK] Recording START confirmed - Lights ON");
         mainWindow.webContents.send("status-update", {
           recording: true,
           message: `Recording started - Lights ON`,
         });
+      } else {
+        console.error("[STUDIO_ONE_LINK] Failed to turn on lights:", result.error);
       }
     },
     async () => {
       // Recording stop callback - turn off lights
+      console.log("[STUDIO_ONE_LINK] Recording STOP requested");
       const result = await hueController.turnOffLights();
       if (result.success) {
-        isRecording = false;
-        console.log(`Recording stopped via Studio One Link - Lights OFF`);
+        recordingState.setRecording(false);
+        console.log("[STUDIO_ONE_LINK] Recording STOP confirmed - Lights OFF");
         mainWindow.webContents.send("status-update", {
           recording: false,
           message: `Recording stopped - Lights OFF`,
         });
+      } else {
+        console.error("[STUDIO_ONE_LINK] Failed to turn off lights:", result.error);
       }
     }
   );
@@ -72,29 +108,33 @@ app.whenReady().then(async () => {
 
   // Listen for recording start events
   studioOneMonitor.on("recordingStarted", async () => {
+    console.log("[STUDIO_ONE_MONITOR] Recording START requested");
     const result = await hueController.turnOnLights();
     if (result.success) {
-      isRecording = true;
-      const status = "ON";
-      console.log(`Recording started - Lights ${status}`);
+      recordingState.setRecording(true);
+      console.log("[STUDIO_ONE_MONITOR] Recording START confirmed - Lights ON");
       mainWindow.webContents.send("status-update", {
         recording: true,
-        message: `Recording started - Lights ${status}`,
+        message: `Recording started - Lights ON`,
       });
+    } else {
+      console.error("[STUDIO_ONE_MONITOR] Failed to turn on lights:", result.error);
     }
   });
 
   // Listen for recording stop events
   studioOneMonitor.on("recordingStopped", async () => {
+    console.log("[STUDIO_ONE_MONITOR] Recording STOP requested");
     const result = await hueController.turnOffLights();
     if (result.success) {
-      isRecording = false;
-      const status = "OFF";
-      console.log(`Recording stopped - Lights ${status}`);
+      recordingState.setRecording(false);
+      console.log("[STUDIO_ONE_MONITOR] Recording STOP confirmed - Lights OFF - Cleanup completed");
       mainWindow.webContents.send("status-update", {
         recording: false,
-        message: `Recording stopped - Lights ${status}`,
+        message: `Recording stopped - Lights OFF`,
       });
+    } else {
+      console.error("[STUDIO_ONE_MONITOR] Failed to turn off lights:", result.error);
     }
   });
 
@@ -119,12 +159,14 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", async () => {
+  console.log("[MAIN] App shutting down - Disposing all resources...");
   if (studioOneMonitor) {
-    studioOneMonitor.stop();
+    studioOneMonitor.dispose();
   }
   if (studioOneLink) {
-    await studioOneLink.stop();
+    await studioOneLink.dispose();
   }
+  console.log("[MAIN] All resources disposed - Shutdown complete");
 });
 
 // IPC handlers

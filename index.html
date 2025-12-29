@@ -83,6 +83,26 @@
       animation: pulse 1.5s infinite;
     }
 
+    .recording-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(90deg, #f44336, #e91e63);
+      color: white;
+      text-align: center;
+      padding: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .recording-banner.show {
+      display: block;
+    }
+
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
@@ -263,6 +283,10 @@
   </style>
 </head>
 <body>
+  <div id="recordingBanner" class="recording-banner">
+    🔴 RECORDING IN PROGRESS - Lights ON
+  </div>
+
   <div class="container">
     <div class="header">
       <h1>🎵 Studio One Hue Controller</h1>
@@ -359,13 +383,16 @@
     function updateRecordingStatus(recording) {
       const indicator = document.getElementById('recordingStatus');
       const text = document.getElementById('recordingText');
+      const banner = document.getElementById('recordingBanner');
       
       if (recording) {
         indicator.classList.add('recording');
         text.textContent = 'Recording: Active';
+        banner.classList.add('show');
       } else {
         indicator.classList.remove('recording');
         text.textContent = 'Recording: Stopped';
+        banner.classList.remove('show');
       }
     }
 

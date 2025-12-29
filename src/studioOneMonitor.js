@@ -238,9 +238,11 @@ class StudioOneMonitor extends EventEmitter {
    */
   stopRecording() {
     if (!this.wasRecording) {
+      console.log("[STUDIO_ONE_MONITOR] Stop recording called but not currently recording - ignoring");
       return;
     }
 
+    console.log("[STUDIO_ONE_MONITOR] Stopping recording - initiating cleanup");
     const fileName = this.trackedFile
       ? path.basename(this.trackedFile)
       : "unknown";
@@ -253,9 +255,10 @@ class StudioOneMonitor extends EventEmitter {
     if (this.activityTimeout) {
       clearTimeout(this.activityTimeout);
       this.activityTimeout = null;
+      console.log("[STUDIO_ONE_MONITOR] Cleared activity timeout");
     }
 
-    console.log(`⏹️ Recording STOPPED (${fileName}) - turning lights OFF`);
+    console.log(`[STUDIO_ONE_MONITOR] Recording STOPPED (${fileName}) - Cleanup completed`);
     this.emit("recordingStopped");
   }
 
@@ -370,17 +373,26 @@ class StudioOneMonitor extends EventEmitter {
   }
 
   stop() {
-    console.log("Stopping Studio One Monitor...");
+    console.log("[STUDIO_ONE_MONITOR] Stopping Studio One Monitor...");
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
+      console.log("[STUDIO_ONE_MONITOR] Cleared process check interval");
     }
     this.stopSizeChecking();
     if (this.activityTimeout) {
       clearTimeout(this.activityTimeout);
       this.activityTimeout = null;
+      console.log("[STUDIO_ONE_MONITOR] Cleared activity timeout");
     }
     this.closeWatcher();
+    console.log("[STUDIO_ONE_MONITOR] Studio One Monitor stopped - All resources disposed");
+  }
+
+  dispose() {
+    this.stop();
+    this.removeAllListeners();
+    console.log("[STUDIO_ONE_MONITOR] Disposed - All listeners removed");
   }
 }
 
