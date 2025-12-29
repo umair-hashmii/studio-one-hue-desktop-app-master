@@ -220,7 +220,6 @@ class StudioOneMonitor extends EventEmitter {
         // File might have been deleted - log warning but do NOT stop recording
         console.warn(`[STUDIO_ONE_MONITOR] WARNING: File access error for ${fileName}. Recording continues.`);
       }
-      }
     }, 500); // Check every 500ms
   }
 
